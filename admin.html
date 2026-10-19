@@ -23,6 +23,9 @@ input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px
 .item button{padding:6px 12px}
 details{margin-bottom:16px}summary{cursor:pointer;font-weight:700}
 #msg{position:fixed;bottom:20px;inset-inline:20px;max-width:420px;margin:auto;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;display:none;text-align:center;z-index:9}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.cols small{display:block;font-weight:700}
+input[type=color]{height:42px;padding:3px}.mrow{display:grid;grid-template-columns:1fr 110px 1.4fr auto;gap:6px;margin-bottom:6px}
+.pv{margin-top:14px;border-radius:12px;padding:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-weight:700}.pv span{padding:2px 10px;border-radius:99px}
 .chk{display:flex;gap:8px;align-items:center}.chk input{width:auto}
 </style>
 </head>
@@ -37,6 +40,16 @@ details{margin-bottom:16px}summary{cursor:pointer;font-weight:700}
 <div class="two"><div><label>رقم واتساب (بكود الدولة، بدون +)</label><input id="wa" dir="ltr" placeholder="201012345678"></div>
 <div><label>العملة</label><input id="cur" value="ج.م"></div></div>
 <p style="margin-top:12px"><button class="btn" id="connect">حفظ وتحميل المنتجات</button></p></details>
+
+<details class="box" id="sty"><summary>تخصيص الموقع (الهيدر والألوان والقوائم)</summary>
+<div class="two"><div><label>اسم البراند</label><input id="brand"></div><div><label>الجملة تحت الاسم في الهيدر</label><input id="tagline"></div></div>
+<label>لوجو (اختياري، يظهر بدل الاسم)</label>
+<p style="display:flex;gap:8px;align-items:center"><button type="button" class="btn ghost" id="logoBtn">اختيار لوجو</button><button type="button" class="btn ghost" id="logoDel">إزالة اللوجو</button><img id="logoPrev" alt="" style="height:40px;display:none"></p><input type="file" id="logoFile" accept="image/*" hidden>
+<label>الألوان</label>
+<div class="cols"><div><small>اللون الرئيسي</small><input type="color" id="c_accent"></div><div><small>لون التمييز</small><input type="color" id="c_highlight"></div><div><small>خلفية الهيدر</small><input type="color" id="c_headerBg"></div><div><small>خط الهيدر</small><input type="color" id="c_headerText"></div><div><small>خلفية الموقع</small><input type="color" id="c_bg"></div></div>
+<label>القائمة العلوية (الهيدر)</label><div id="menuList"></div><button type="button" class="btn ghost" id="addMenu">+ إضافة عنصر للقائمة</button>
+<div class="pv" id="pv"></div>
+<p style="margin-top:14px"><button type="button" class="btn" id="saveSty">حفظ التخصيص ونشره</button></p></details>
 
 <div class="lay">
 <form class="box" id="f">
@@ -62,7 +75,7 @@ const b64=s=>btoa(unescape(encodeURIComponent(s)));
 const gh=(p,o={})=>fetch(`https://api.github.com/repos/${cfg.repo}/contents/${p}${o.method==='PUT'?'':'?ref='+cfg.branch}`,{...o,headers:{Authorization:'Bearer '+cfg.token,Accept:'application/vnd.github+json'}});
 async function load(){const r=await gh('products.json');if(!r.ok)throw Error('تأكد من المستودع والتوكن ('+r.status+')');
 const j=await r.json();sha=j.sha;db=JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))));
-$('#wa').value=db.settings.whatsapp;$('#cur').value=db.settings.currency;render();newCode()}
+$('#wa').value=db.settings.whatsapp;$('#cur').value=db.settings.currency;render();newCode();fillSty()}
 $('#connect').onclick=async()=>{const w=$('#wa').value.trim(),c=$('#cur').value.trim();
 cfg={repo:$('#repo').value.trim(),branch:$('#branch').value.trim()||'main',token:$('#token').value.trim()};
 localStorage.tmcfg=JSON.stringify(cfg);try{await load();
@@ -87,11 +100,32 @@ async function put(path,content,msg,s){const r=await gh(path,{method:'PUT',body:
 if(!r.ok)throw Error('فشل الحفظ ('+r.status+')');return (await r.json()).content.sha}
 async function save(msg){try{if(!cfg.token)throw Error('اربط GitHub الأول');toast('جاري النشر...');
 for(const p in up){await put(p,up[p],'إضافة صورة');delete up[p]}
-db.settings.whatsapp=$('#wa').value.trim()||db.settings.whatsapp;db.settings.currency=$('#cur').value||'ج.م';
+readSty();db.settings.whatsapp=$('#wa').value.trim()||db.settings.whatsapp;db.settings.currency=$('#cur').value||'ج.م';
 sha=await put('products.json',b64(JSON.stringify(db,null,2)),msg,sha);toast('تم النشر ✓ (يظهر في الموقع خلال دقيقة)')}catch(e){toast(e.message)}}
 $('#f').onsubmit=async e=>{e.preventDefault();const p={code:$('#code').value.trim(),name:$('#name').value.trim(),price:+$('#price').value,category:$('#cat').value.trim(),desc:$('#desc').value.trim(),image:img,available:$('#av').checked};
 if(db.products.some((x,i)=>x.code===p.code&&i!==edit))return toast('الكود ده مستخدم قبل كده');
 edit===null?db.products.push(p):db.products[edit]=p;await save('تحديث: '+p.name);render();clear()};
+
+const TD={accent:'#3d2bff',highlight:'#ffd23f',headerBg:'#15171c',headerText:'#f1f2f4',bg:'#f1f2f4'},CK=Object.keys(TD);
+const ea=s=>String(s??'').replace(/"/g,'&quot;');
+function fillSty(){const s=db.settings,t={...TD,...s.theme};$('#brand').value=s.brand||'Trend Maker';$('#tagline').value=s.tagline||'';CK.forEach(k=>$('#c_'+k).value=t[k]);
+if(s.logo){$('#logoPrev').src=s.logo;$('#logoPrev').style.display='block'}else $('#logoPrev').style.display='none';menuUI();pv()}
+function readSty(){const s=db.settings;s.brand=$('#brand').value.trim()||'Trend Maker';s.tagline=$('#tagline').value.trim();s.theme={};CK.forEach(k=>s.theme[k]=$('#c_'+k).value)}
+function menuUI(){const m=db.settings.menu||(db.settings.menu=[]);
+$('#menuList').innerHTML=m.map((x,i)=>`<div class="mrow"><input value="${ea(x.label)}" placeholder="الاسم" oninput="mm(${i},'label',this.value)">
+<select onchange="mm(${i},'type',this.value);menuUI()"><option value="cat" ${x.type==='cat'?'selected':''}>تصنيف</option><option value="link" ${x.type==='link'?'selected':''}>رابط</option></select>
+<input value="${ea(x.value)}" ${x.type==='cat'?'list="cats"':'dir="ltr"'} placeholder="${x.type==='cat'?'اسم التصنيف أو الكل':'https://...'}" oninput="mm(${i},'value',this.value)">
+<button type="button" class="btn ghost" onclick="rmm(${i})">✕</button></div>`).join('')||'<p style="color:var(--mute)">مفيش عناصر في القائمة.</p>'}
+window.mm=(i,k,v)=>{db.settings.menu[i][k]=v;pv()};window.rmm=i=>{db.settings.menu.splice(i,1);menuUI();pv()};
+$('#addMenu').onclick=()=>{(db.settings.menu||(db.settings.menu=[])).push({label:'',type:'cat',value:'الكل'});menuUI()};
+function pv(){const t={...TD,...db.settings.theme};$('#pv').style.cssText=`background:${t.headerBg};color:${t.headerText}`;
+$('#pv').innerHTML=`<b style="font-size:1.3rem">${ea($('#brand').value)}</b><div style="display:flex;gap:6px">${(db.settings.menu||[]).map(m=>`<span style="background:${t.highlight};color:#15171c">${ea(m.label||'...')}</span>`).join('')}</div>`}
+$('#sty').addEventListener('input',()=>{readSty();pv()});
+$('#logoBtn').onclick=()=>$('#logoFile').click();
+$('#logoDel').onclick=()=>{db.settings.logo='';$('#logoPrev').style.display='none'};
+$('#logoFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.onload=()=>{const k=Math.min(1,400/im.height),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;
+c.getContext('2d').drawImage(im,0,0,c.width,c.height);const d=c.toDataURL('image/png'),p='images/logo-'+Date.now()+'.png';up[p]=d.split(',')[1];db.settings.logo=p;$('#logoPrev').src=d;$('#logoPrev').style.display='block'};im.src=URL.createObjectURL(f)};
+$('#saveSty').onclick=async()=>{readSty();await save('تحديث التخصيص')};
 if(cfg.token)load().catch(e=>toast(e.message));
 </script>
 </body>
