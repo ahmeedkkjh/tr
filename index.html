@@ -8,8 +8,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-header{background:var(--ink);color:var(--bg);padding:48px 0 40px}
-header .logo{font-size:2.6rem}header p{opacity:.75;margin-top:6px;font-size:1.1rem}
+header{background:var(--hbg,#15171c);color:var(--htx,#f1f2f4);padding:20px 0 40px}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+header .logo{font-size:2.2rem;color:inherit;text-decoration:none}.logo img{height:56px;display:block}
+nav{display:flex;gap:6px;flex-wrap:wrap}nav a{color:inherit;text-decoration:none;font-weight:700;padding:6px 14px;border-radius:99px;opacity:.85}nav a:hover,nav a.on{background:var(--acc2);color:#15171c;opacity:1}
+header p{opacity:.8;font-size:1.25rem;font-weight:700}
 .bar{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}
 .bar input{flex:1;min-width:200px;padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
@@ -29,21 +32,28 @@ footer{text-align:center;color:var(--mute);padding:24px;border-top:1px solid var
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="logo">Trend<i>Maker</i></div><p id="tag"></p></div></header>
+<header><div class="wrap"><div class="hd"><a class="logo" id="logo" href="./"></a><nav id="nav"></nav></div><p id="tag"></p></div></header>
 <main class="wrap">
   <div class="bar"><input id="q" type="search" placeholder="ابحث باسم المنتج أو الكود..." aria-label="بحث"><div class="chips" id="chips"></div></div>
   <div class="grid" id="grid"><div class="empty">جاري التحميل...</div></div>
 </main>
-<footer>© Trend Maker</footer>
+<footer id="ft"></footer>
 <script>
+const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const $=s=>document.querySelector(s);let S={},P=[],cat='الكل';
-fetch('products.json?t='+Date.now()).then(r=>r.json()).then(d=>{S=d.settings;P=d.products;$('#tag').textContent=S.tagline||'';chips();draw()})
+fetch('products.json?t='+Date.now()).then(r=>r.json()).then(d=>{S=d.settings;P=d.products;theme();chips();draw()})
 .catch(()=>$('#grid').innerHTML='<div class="empty">تعذر تحميل المنتجات. افتح الموقع من رابط GitHub Pages وليس من الملف مباشرة.</div>');
+function theme(){const T={accent:'#3d2bff',highlight:'#ffd23f',headerBg:'#15171c',headerText:'#f1f2f4',bg:'#f1f2f4',...S.theme},r=document.documentElement.style;
+r.setProperty('--acc',T.accent);r.setProperty('--acc2',T.highlight);r.setProperty('--bg',T.bg);r.setProperty('--hbg',T.headerBg);r.setProperty('--htx',T.headerText);
+const b=S.brand||'Trend Maker',w=b.split(' ');document.title=b+' | معرض المنتجات';
+$('#logo').innerHTML=S.logo?`<img src="${esc(S.logo)}" alt="${esc(b)}">`:(w.length>1?`${esc(w[0])}<i>${esc(w.slice(1).join(' '))}</i>`:esc(b));
+$('#tag').textContent=S.tagline||'';$('#ft').textContent='© '+b;nav()}
+function nav(){$('#nav').innerHTML=(S.menu||[]).map((m,i)=>m.type==='cat'?`<a href="#" data-c="${esc(m.value)}" class="${m.value===cat?'on':''}">${esc(m.label)}</a>`:`<a href="${esc(m.value)}" target="_blank" rel="noopener">${esc(m.label)}</a>`).join('');
+document.querySelectorAll('#nav a[data-c]').forEach(a=>a.onclick=e=>{e.preventDefault();cat=a.dataset.c;chips();nav();draw();$('main').scrollIntoView({behavior:'smooth'})})}
 function chips(){const c=['الكل',...new Set(P.map(p=>p.category).filter(Boolean))];
 $('#chips').innerHTML=c.map(x=>`<button class="chip ${x===cat?'on':''}" data-c="${x}">${x}</button>`).join('');
-document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{cat=b.dataset.c;chips();draw()})}
-const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
-function wa(p){const t=`أهلاً Trend Maker، عاوز أطلب:\n${p.name}\nكود المنتج: ${p.code}\nالسعر: ${p.price} ${S.currency}`;
+document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{cat=b.dataset.c;chips();nav();draw()})}
+function wa(p){const t=`أهلاً ${S.brand||'Trend Maker'}، عاوز أطلب:\n${p.name}\nكود المنتج: ${p.code}\nالسعر: ${p.price} ${S.currency}`;
 return `https://wa.me/${S.whatsapp}?text=${encodeURIComponent(t)}`}
 function draw(){const q=$('#q').value.trim().toLowerCase();
 const L=P.filter(p=>(cat==='الكل'||p.category===cat)&&(p.name+p.code).toLowerCase().includes(q));
