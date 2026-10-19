@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>لوحة التحكم | Trend Maker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.top{display:flex;justify-content:space-between;align-items:center;padding:18px 0}
+.lay{display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start;padding-bottom:60px}
+@media(max-width:820px){.lay{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+label{display:block;font-weight:700;font-size:.9rem;margin:10px 0 4px}
+input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.drop{border:2px dashed var(--line);border-radius:12px;min-height:120px;display:grid;place-items:center;cursor:pointer;color:var(--mute);overflow:hidden}
+.drop img{width:100%;max-height:220px;object-fit:cover}
+.item{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border:0}.item img,.item .ph{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--acc);flex:none}
+.item b{display:block}.item small{color:var(--mute)}.item .sp{flex:1}
+.item button{padding:6px 12px}
+details{margin-bottom:16px}summary{cursor:pointer;font-weight:700}
+#msg{position:fixed;bottom:20px;inset-inline:20px;max-width:420px;margin:auto;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;display:none;text-align:center;z-index:9}
+.chk{display:flex;gap:8px;align-items:center}.chk input{width:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><div class="logo">Trend<i>Maker</i> <small style="font-size:.9rem;font-weight:400">لوحة التحكم</small></div><a class="btn ghost" href="index.html" target="_blank">فتح المتجر</a></div>
+
+<details class="box" id="cfgBox" open><summary>ربط GitHub (مرة واحدة)</summary>
+<div class="two"><div><label>المستودع (اسم المستخدم/اسم الريبو)</label><input id="repo" dir="ltr" placeholder="ahmed/trend-maker"></div>
+<div><label>الفرع</label><input id="branch" dir="ltr" value="main"></div></div>
+<label>Personal Access Token (صلاحية Contents: Read and write)</label><input id="token" type="password" dir="ltr" placeholder="github_pat_...">
+<div class="two"><div><label>رقم واتساب (بكود الدولة، بدون +)</label><input id="wa" dir="ltr" placeholder="201012345678"></div>
+<div><label>العملة</label><input id="cur" value="ج.م"></div></div>
+<p style="margin-top:12px"><button class="btn" id="connect">حفظ وتحميل المنتجات</button></p></details>
+
+<div class="lay">
+<form class="box" id="f">
+<h2 id="ft">منتج جديد</h2>
+<label>صورة المنتج</label>
+<div class="drop" id="drop" tabindex="0">اضغط لاختيار صورة</div><input type="file" id="file" accept="image/*" hidden>
+<label>اسم المنتج</label><input id="name" required>
+<div class="two"><div><label>الكود</label><input id="code" dir="ltr" required></div><div><label>السعر</label><input id="price" type="number" min="0" required></div></div>
+<label>التصنيف</label><input id="cat" list="cats" placeholder="مثال: أزياء"><datalist id="cats"></datalist>
+<label>الوصف</label><textarea id="desc" rows="3"></textarea>
+<label class="chk" style="margin-top:12px"><input type="checkbox" id="av" checked> متاح للطلب</label>
+<p style="margin-top:14px;display:flex;gap:8px"><button class="btn" style="flex:1">حفظ المنتج ونشره</button><button type="button" class="btn ghost" id="reset">جديد</button></p>
+</form>
+<section class="box"><h2>المنتجات <small id="n"></small></h2><div id="list"><p style="color:var(--mute)">اربط GitHub الأول عشان تظهر المنتجات.</p></div></section>
+</div></div>
+<div id="msg" role="status"></div>
+<script>
+const $=s=>document.querySelector(s);
+let cfg=JSON.parse(localStorage.tmcfg||'{}'),db={settings:{whatsapp:'',currency:'ج.م',tagline:'أحدث التريندات في مكان واحد'},products:[]},sha=null,up={},edit=null,img='';
+['repo','branch','token'].forEach(k=>{if(cfg[k])$('#'+k).value=cfg[k]});
+const toast=t=>{const m=$('#msg');m.textContent=t;m.style.display='block';clearTimeout(m.t);m.t=setTimeout(()=>m.style.display='none',3500)};
+const b64=s=>btoa(unescape(encodeURIComponent(s)));
+const gh=(p,o={})=>fetch(`https://api.github.com/repos/${cfg.repo}/contents/${p}${o.method==='PUT'?'':'?ref='+cfg.branch}`,{...o,headers:{Authorization:'Bearer '+cfg.token,Accept:'application/vnd.github+json'}});
+async function load(){const r=await gh('products.json');if(!r.ok)throw Error('تأكد من المستودع والتوكن ('+r.status+')');
+const j=await r.json();sha=j.sha;db=JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))));
+$('#wa').value=db.settings.whatsapp;$('#cur').value=db.settings.currency;render();newCode()}
+$('#connect').onclick=async()=>{cfg={repo:$('#repo').value.trim(),branch:$('#branch').value.trim()||'main',token:$('#token').value.trim()};
+localStorage.tmcfg=JSON.stringify(cfg);try{await load();db.settings.whatsapp=$('#wa').value.trim()||db.settings.whatsapp;db.settings.currency=$('#cur').value;toast('تم التحميل ✓');$('#cfgBox').open=false}catch(e){toast(e.message)}};
+function render(){$('#n').textContent=`(${db.products.length})`;
+$('#cats').innerHTML=[...new Set(db.products.map(p=>p.category))].map(c=>`<option value="${c}">`).join('');
+$('#list').innerHTML=db.products.map((p,i)=>`<div class="item">${p.image?`<img src="${p.image}?t=${Date.now()}" alt="">`:'<div class="ph"></div>'}<div class="sp"><b>${p.name}</b><small>${p.code} · ${p.price} ${db.settings.currency} · ${p.available?'متاح':'نفد'}</small></div>
+<button class="btn ghost" onclick="ed(${i})">تعديل</button><button class="btn ghost" onclick="del(${i})">حذف</button></div>`).join('')||'<p style="color:var(--mute)">لسه مفيش منتجات. ابدأ بإضافة أول منتج.</p>'}
+function newCode(){const m=Math.max(0,...db.products.map(p=>+(p.code.match(/\d+$/)||[0])[0]));$('#code').value='TM-'+String(m+1).padStart(3,'0')}
+function clear(){edit=null;img='';$('#f').reset();$('#ft').textContent='منتج جديد';$('#drop').innerHTML='اضغط لاختيار صورة';newCode()}
+$('#reset').onclick=clear;
+window.ed=i=>{const p=db.products[i];edit=i;img=p.image;$('#ft').textContent='تعديل: '+p.code;
+$('#name').value=p.name;$('#code').value=p.code;$('#price').value=p.price;$('#cat').value=p.category;$('#desc').value=p.desc;$('#av').checked=p.available;
+$('#drop').innerHTML=p.image?`<img src="${p.image}">`:'اضغط لاختيار صورة';scrollTo({top:0,behavior:'smooth'})};
+window.del=async i=>{if(!confirm('حذف '+db.products[i].name+'؟'))return;db.products.splice(i,1);await save('حذف منتج');render()};
+$('#drop').onclick=()=>$('#file').click();
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.onload=()=>{const k=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement('canvas');
+c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);const d=c.toDataURL('image/jpeg',.82);
+img='images/'+Date.now()+'.jpg';up[img]=d.split(',')[1];$('#drop').innerHTML=`<img src="${d}">`};im.src=URL.createObjectURL(f)};
+async function put(path,content,msg,s){const r=await gh(path,{method:'PUT',body:JSON.stringify({message:msg,content,branch:cfg.branch,...(s?{sha:s}:{})})});
+if(!r.ok)throw Error('فشل الحفظ ('+r.status+')');return (await r.json()).content.sha}
+async function save(msg){try{if(!cfg.token)throw Error('اربط GitHub الأول');toast('جاري النشر...');
+for(const p in up){await put(p,up[p],'إضافة صورة');delete up[p]}
+db.settings.whatsapp=$('#wa').value.trim()||db.settings.whatsapp;db.settings.currency=$('#cur').value||'ج.م';
+sha=await put('products.json',b64(JSON.stringify(db,null,2)),msg,sha);toast('تم النشر ✓ (يظهر في الموقع خلال دقيقة)')}catch(e){toast(e.message)}}
+$('#f').onsubmit=async e=>{e.preventDefault();const p={code:$('#code').value.trim(),name:$('#name').value.trim(),price:+$('#price').value,category:$('#cat').value.trim(),desc:$('#desc').value.trim(),image:img,available:$('#av').checked};
+if(db.products.some((x,i)=>x.code===p.code&&i!==edit))return toast('الكود ده مستخدم قبل كده');
+edit===null?db.products.push(p):db.products[edit]=p;await save('تحديث: '+p.name);render();clear()};
+if(cfg.token)load().catch(e=>toast(e.message));
+</script>
+</body>
+</html>

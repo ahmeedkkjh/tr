@@ -1,0 +1,8 @@
+{
+  "settings": { "whatsapp": "201000000000", "currency": "ج.م", "tagline": "أحدث التريندات في مكان واحد" },
+  "products": [
+    { "code": "TM-001", "name": "ساعة سمارت ألترا", "price": 850, "category": "إلكترونيات", "desc": "شاشة AMOLED وبطارية تدوم 5 أيام.", "image": "", "available": true },
+    { "code": "TM-002", "name": "سماعة بلوتوث برو", "price": 420, "category": "إلكترونيات", "desc": "عزل ضوضاء وصوت نقي.", "image": "", "available": true },
+    { "code": "TM-003", "name": "شنطة ظهر عصرية", "price": 360, "category": "أزياء", "desc": "مقاومة للمياه وتشيل لاب توب 15 بوصة.", "image": "", "available": false }
+  ]
+}
