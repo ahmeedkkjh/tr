@@ -5,8 +5,8 @@
     "tagline": "أحدث التريندات في مكان واحد",
     "menu": [
       {
-        "label": "",
-        "type": "cat",
+        "label": "Trend Maker",
+        "type": "link",
         "value": "الكل"
       }
     ],
@@ -18,7 +18,7 @@
       "headerText": "#f1f2f4",
       "bg": "#151a23"
     },
-    "logo": "images/logo-1792422258412.png"
+    "logo": "images/logo-1792435362516.png"
   },
   "products": [
     {
