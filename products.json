@@ -2,7 +2,17 @@
   "settings": {
     "whatsapp": "201031431884",
     "currency": "ج.م",
-    "tagline": "أحدث التريندات في مكان واحد"
+    "tagline": "أحدث التريندات في مكان واحد",
+    "menu": [],
+    "brand": "Trend Maker",
+    "theme": {
+      "accent": "#3d2bff",
+      "highlight": "#ab923f",
+      "headerBg": "#15171c",
+      "headerText": "#f1f2f4",
+      "bg": "#151a23"
+    },
+    "logo": "images/logo-1792422090207.png"
   },
   "products": [
     {
