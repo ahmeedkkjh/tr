@@ -63,8 +63,11 @@ const gh=(p,o={})=>fetch(`https://api.github.com/repos/${cfg.repo}/contents/${p}
 async function load(){const r=await gh('products.json');if(!r.ok)throw Error('تأكد من المستودع والتوكن ('+r.status+')');
 const j=await r.json();sha=j.sha;db=JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))));
 $('#wa').value=db.settings.whatsapp;$('#cur').value=db.settings.currency;render();newCode()}
-$('#connect').onclick=async()=>{cfg={repo:$('#repo').value.trim(),branch:$('#branch').value.trim()||'main',token:$('#token').value.trim()};
-localStorage.tmcfg=JSON.stringify(cfg);try{await load();db.settings.whatsapp=$('#wa').value.trim()||db.settings.whatsapp;db.settings.currency=$('#cur').value;toast('تم التحميل ✓');$('#cfgBox').open=false}catch(e){toast(e.message)}};
+$('#connect').onclick=async()=>{const w=$('#wa').value.trim(),c=$('#cur').value.trim();
+cfg={repo:$('#repo').value.trim(),branch:$('#branch').value.trim()||'main',token:$('#token').value.trim()};
+localStorage.tmcfg=JSON.stringify(cfg);try{await load();
+if((w&&w!==db.settings.whatsapp)||(c&&c!==db.settings.currency)){$('#wa').value=w||db.settings.whatsapp;$('#cur').value=c||db.settings.currency;await save('تحديث الإعدادات')}
+else toast('تم التحميل ✓');$('#cfgBox').open=false}catch(e){toast(e.message)}};
 function render(){$('#n').textContent=`(${db.products.length})`;
 $('#cats').innerHTML=[...new Set(db.products.map(p=>p.category))].map(c=>`<option value="${c}">`).join('');
 $('#list').innerHTML=db.products.map((p,i)=>`<div class="item">${p.image?`<img src="${p.image}?t=${Date.now()}" alt="">`:'<div class="ph"></div>'}<div class="sp"><b>${p.name}</b><small>${p.code} · ${p.price} ${db.settings.currency} · ${p.available?'متاح':'نفد'}</small></div>
