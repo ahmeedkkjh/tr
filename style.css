@@ -1,5 +1,4 @@
 :root{--bg:#f1f2f4;--card:#fff;--ink:#15171c;--mute:#6b7280;--line:#dfe1e6;--acc:#3d2bff;--acc2:#ffd23f;--wa:#1faa59}
-@media(prefers-color-scheme:dark){:root{--bg:#101116;--card:#1a1c23;--ink:#f2f3f5;--mute:#9aa0ab;--line:#2c2f38;--acc:#8b7fff}}
 *{box-sizing:border-box;margin:0}
 body{font-family:Cairo,Tahoma,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
 button,input,select,textarea{font:inherit;color:inherit}
