@@ -13,15 +13,6 @@
       "desc": "عزل ضوضاء وصوت نقي.",
       "image": "images/1792420813174.jpg",
       "available": true
-    },
-    {
-      "code": "TM-003",
-      "name": "شنطة ظهر عصرية",
-      "price": 360,
-      "category": "أزياء",
-      "desc": "مقاومة للمياه وتشيل لاب توب 15 بوصة.",
-      "image": "",
-      "available": false
     }
   ]
 }
