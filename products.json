@@ -10,15 +10,15 @@
         "value": "الكل"
       }
     ],
-    "brand": "Trend Maker",
+    "brand": "Ahmed Hesham",
     "theme": {
       "accent": "#3d2bff",
       "highlight": "#ab923f",
       "headerBg": "#15171c",
-      "headerText": "#f1f2f4",
-      "bg": "#151a23"
+      "headerText": "#ffffff",
+      "bg": "#0059ff"
     },
-    "logo": "images/logo-1792435362516.png"
+    "logo": ""
   },
   "products": [
     {
